@@ -1,0 +1,428 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "THX_GUI"
+gui.ResetOnSpawn = false
+
+-- Painel principal
+local painel = Instance.new("Frame")
+painel.Size = UDim2.new(0.6, 0, 0.8, 0)
+painel.Position = UDim2.new(0.2, 0, 0.1, 0)
+painel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+painel.Visible = true
+painel.Parent = gui
+Instance.new("UICorner", painel).CornerRadius = UDim.new(0, 8)
+
+-- Título
+local titulo = Instance.new("TextLabel", painel)
+titulo.Size = UDim2.new(1, 0, 0, 40)
+titulo.BackgroundTransparency = 1
+titulo.Text = "THX Store - Bem-vindo e obrigado por ter comprado!"
+titulo.TextColor3 = Color3.new(1, 1, 1)
+titulo.Font = Enum.Font.GothamBold
+titulo.TextSize = 20
+titulo.Position = UDim2.new(0, 0, 0, 0)
+
+-- Botão de fechar
+local fechar = Instance.new("TextButton", painel)
+fechar.Size = UDim2.new(0, 70, 0, 30)
+fechar.Position = UDim2.new(1, -80, 0, 10)
+fechar.Text = "Fechar"
+fechar.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+fechar.TextColor3 = Color3.new(1, 1, 1)
+fechar.Font = Enum.Font.Gotham
+fechar.TextSize = 14
+Instance.new("UICorner", fechar).CornerRadius = UDim.new(0, 6)
+
+-- Botão abrir
+local abrir = Instance.new("TextButton", gui)
+abrir.Size = UDim2.new(0, 50, 0, 50)
+abrir.Position = UDim2.new(1, -60, 0.5, -25)
+abrir.Text = "⚙️"
+abrir.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+abrir.TextColor3 = Color3.new(1, 1, 1)
+abrir.Font = Enum.Font.GothamBold
+abrir.TextSize = 24
+abrir.Visible = false
+abrir.Active = true
+abrir.Draggable = true
+Instance.new("UICorner", abrir).CornerRadius = UDim.new(0, 10)
+
+-- Funções abrir/fechar
+fechar.MouseButton1Click:Connect(function()
+	painel.Visible = false
+	abrir.Visible = true
+end)
+
+abrir.MouseButton1Click:Connect(function()
+	painel.Visible = true
+	abrir.Visible = false
+end)
+
+-- ScrollFrame para todas as secções
+local scroll = Instance.new("ScrollingFrame", painel)
+scroll.Size = UDim2.new(1, -20, 1, -60)
+scroll.Position = UDim2.new(0, 10, 0, 50)
+scroll.CanvasSize = UDim2.new(0, 0, 5, 0)
+scroll.ScrollBarThickness = 8
+scroll.BackgroundTransparency = 1
+
+-- Layout para arrumar os elementos em colunas verticais
+local layout = Instance.new("UIListLayout", scroll)
+layout.Padding = UDim.new(0, 20)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Função para criar secções
+local function criarSecao(tituloTexto)
+	local secao = Instance.new("Frame", scroll)
+	secao.Size = UDim2.new(1, -10, 0, 50)
+	secao.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	secao.AutomaticSize = Enum.AutomaticSize.Y
+	Instance.new("UICorner", secao).CornerRadius = UDim.new(0, 6)
+
+	local titulo = Instance.new("TextLabel", secao)
+	titulo.Size = UDim2.new(1, 0, 0, 30)
+	titulo.Text = tituloTexto
+	titulo.BackgroundTransparency = 1
+	titulo.TextColor3 = Color3.new(1, 1, 1)
+	titulo.Font = Enum.Font.GothamBold
+	titulo.TextSize = 18
+
+	return secao
+end
+
+-- Criar as secções (apenas visuais por agora)
+local secaoPrincipal = criarSecao("🔧 Principal")
+local secaoArmas = criarSecao("🔫 Armas")
+local secaoDinheiro = criarSecao("💰 Dinheiro")
+local secaoTeams = criarSecao("🛡️ Teams")
+local secaoCreditos = criarSecao("📌 Créditos")
+
+-- Créditos
+local creditosTexto = Instance.new("TextLabel", secaoCreditos)
+creditosTexto.Size = UDim2.new(1, -10, 0, 30)
+creditosTexto.Position = UDim2.new(0, 5, 0, 30)
+creditosTexto.BackgroundTransparency = 1
+creditosTexto.Text = "Sistema feito pela THX Store pelo tttonas"
+creditosTexto.TextColor3 = Color3.new(1, 1, 1)
+creditosTexto.Font = Enum.Font.Gotham
+creditosTexto.TextSize = 14
+creditosTexto.TextWrapped = true
+creditosTexto.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Função para ativar noclip (permite atravessar paredes)
+local function setNoclip(state)
+	local character = player.Character or player.CharacterAdded:Wait()
+	for _, part in pairs(character:GetChildren()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = not state
+		end
+	end
+end
+
+local flyAtivo = false
+local flyBotao = Instance.new("TextButton", secaoPrincipal)
+flyBotao.Size = UDim2.new(1, -20, 0, 30)
+flyBotao.Position = UDim2.new(0, 10, 0, 40)
+flyBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+flyBotao.TextColor3 = Color3.new(1, 1, 1)
+flyBotao.Font = Enum.Font.Gotham
+flyBotao.TextSize = 14
+flyBotao.Text = "Fly (Noclip)"
+flyBotao.TextWrapped = true
+Instance.new("UICorner", flyBotao).CornerRadius = UDim.new(0, 6)
+
+local stopFlyFunc = nil
+
+local function ativarFly()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+	setNoclip(true)  -- ativa noclip
+
+	local bodyGyro = Instance.new("BodyGyro")
+	bodyGyro.P = 9e4
+	bodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+	bodyGyro.CFrame = humanoidRootPart.CFrame
+	bodyGyro.Parent = humanoidRootPart
+
+	local bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+	bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+	bodyVelocity.Parent = humanoidRootPart
+
+	local flying = true
+
+	local connection = game:GetService("RunService").RenderStepped:Connect(function()
+		if not flying then return end
+		local camera = workspace.CurrentCamera
+		local moveDirection = player.Character:FindFirstChildOfClass("Humanoid").MoveDirection
+		local camLookVector = camera.CFrame.LookVector
+		local speed = 60
+
+		if moveDirection.Magnitude > 0 then
+			bodyVelocity.Velocity = camLookVector.Unit * speed
+		else
+			bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+		end
+
+		bodyGyro.CFrame = camera.CFrame
+	end)
+
+	return function()
+		flying = false
+		connection:Disconnect()
+		bodyGyro:Destroy()
+		bodyVelocity:Destroy()
+		setNoclip(false) -- desativa noclip
+	end
+end
+
+flyBotao.MouseButton1Click:Connect(function()
+	flyAtivo = not flyAtivo
+	if flyAtivo then
+		stopFlyFunc = ativarFly()
+		flyBotao.TextColor3 = Color3.fromRGB(0, 255, 0) -- verde ativo
+	else
+		if stopFlyFunc then stopFlyFunc() end
+		flyBotao.TextColor3 = Color3.new(1, 1, 1) -- branco inativo
+	end
+end)
+
+-- Botão Invisível
+local invisivelAtivo = false
+local invisivelBotao = Instance.new("TextButton", secaoPrincipal)
+invisivelBotao.Size = UDim2.new(1, -20, 0, 30)
+invisivelBotao.Position = UDim2.new(0, 10, 0, 80) -- um pouco abaixo do botão Fly
+invisivelBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+invisivelBotao.TextColor3 = Color3.new(1, 1, 1)
+invisivelBotao.Font = Enum.Font.Gotham
+invisivelBotao.TextSize = 14
+invisivelBotao.Text = "Invisível"
+invisivelBotao.TextWrapped = true
+Instance.new("UICorner", invisivelBotao).CornerRadius = UDim.new(0, 6)
+
+local function setInvisivel(state)
+    local character = player.Character or player.CharacterAdded:Wait()
+
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Transparency = state and 1 or 0
+            part.CanCollide = not state
+        elseif part:IsA("Decal") or part:IsA("Texture") then
+            part.Transparency = state and 1 or 0
+        elseif part:IsA("Accessory") then
+            local handle = part:FindFirstChild("Handle")
+            if handle then
+                handle.Transparency = state and 1 or 0
+                handle.CanCollide = not state
+            end
+            for _, decal in pairs(part:GetChildren()) do
+                if decal:IsA("Decal") or decal:IsA("Texture") then
+                    decal.Transparency = state and 1 or 0
+                end
+            end
+        end
+    end
+end
+
+invisivelBotao.MouseButton1Click:Connect(function()
+    invisivelAtivo = not invisivelAtivo
+    setInvisivel(invisivelAtivo)
+    if invisivelAtivo then
+        invisivelBotao.TextColor3 = Color3.fromRGB(0, 255, 0) -- verde ligado
+    else
+        invisivelBotao.TextColor3 = Color3.new(1, 1, 1) -- branco desligado
+    end
+end)
+
+local function setInvisivel(state)
+    local character = player.Character or player.CharacterAdded:Wait()
+
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            -- Torna invisível todas as partes físicas, incluindo cabeça
+            part.Transparency = state and 1 or 0
+            part.CanCollide = not state
+        elseif part:IsA("Decal") or part:IsA("Texture") then
+            -- Face e outras texturas
+            part.Transparency = state and 1 or 0
+        elseif part:IsA("Accessory") then
+            -- Para acessórios como cabelo, chapéus, etc.
+            local handle = part:FindFirstChild("Handle")
+            if handle then
+                handle.Transparency = state and 1 or 0
+                handle.CanCollide = not state
+            end
+            -- Também ocultar decals dentro do acessório
+            for _, decal in pairs(part:GetChildren()) do
+                if decal:IsA("Decal") or decal:IsA("Texture") then
+                    decal.Transparency = state and 1 or 0
+                end
+            end
+        end
+    end
+end
+
+-- Botão God Mode
+local godModeAtivo = false
+local godModeBotao = Instance.new("TextButton", secaoPrincipal)
+godModeBotao.Size = UDim2.new(1, -20, 0, 30)
+godModeBotao.Position = UDim2.new(0, 10, 0, 120) -- abaixo do botão invisível
+godModeBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+godModeBotao.TextColor3 = Color3.new(1, 1, 1)
+godModeBotao.Font = Enum.Font.Gotham
+godModeBotao.TextSize = 14
+godModeBotao.Text = "God Mode"
+godModeBotao.TextWrapped = true
+Instance.new("UICorner", godModeBotao).CornerRadius = UDim.new(0, 6)
+
+local godModeConexao = nil
+
+godModeBotao.MouseButton1Click:Connect(function()
+    godModeAtivo = not godModeAtivo
+    
+    if godModeAtivo then
+        godModeBotao.TextColor3 = Color3.fromRGB(0, 255, 0)
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = math.huge
+            humanoid.Health = math.huge
+            -- Mantém a vida sempre alta
+            godModeConexao = game:GetService("RunService").Heartbeat:Connect(function()
+                if humanoid and humanoid.Health < humanoid.MaxHealth then
+                    humanoid.Health = humanoid.MaxHealth
+                end
+            end)
+        end
+    else
+        godModeBotao.TextColor3 = Color3.new(1,1,1)
+        if godModeConexao then
+            godModeConexao:Disconnect()
+            godModeConexao = nil
+        end
+        -- Poderias resetar para valores normais aqui, mas cuidado para não causar erros
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = 100
+            if humanoid.Health > 100 then
+                humanoid.Health = 100
+            end
+        end
+    end
+end)
+
+
+-- Botão Anti Ban
+local antiBanAtivo = false
+local antiBanBotao = Instance.new("TextButton", secaoPrincipal)
+antiBanBotao.Size = UDim2.new(1, -20, 0, 30)
+antiBanBotao.Position = UDim2.new(0, 10, 0, 160) -- abaixo do botão God Mode
+antiBanBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+antiBanBotao.TextColor3 = Color3.new(1, 1, 1)
+antiBanBotao.Font = Enum.Font.Gotham
+antiBanBotao.TextSize = 14
+antiBanBotao.Text = "Anti Ban / Kick"
+antiBanBotao.TextWrapped = true
+Instance.new("UICorner", antiBanBotao).CornerRadius = UDim.new(0, 6)
+
+local originalKick = player.Kick
+local originalDestroy = player.Destroy
+
+antiBanBotao.MouseButton1Click:Connect(function()
+    antiBanAtivo = not antiBanAtivo
+    
+    if antiBanAtivo then
+        antiBanBotao.TextColor3 = Color3.fromRGB(0, 255, 0)
+        -- Sobrescreve métodos para impedir kick e destroy
+        player.Kick = function() end
+        player.Destroy = function() end
+    else
+        antiBanBotao.TextColor3 = Color3.new(1,1,1)
+        -- Restaura métodos originais
+        player.Kick = originalKick
+        player.Destroy = originalDestroy
+    end
+end)
+
+-- Botão Stamina Infinita
+local staminaAtiva = false
+local staminaBotao = Instance.new("TextButton", secaoPrincipal)
+staminaBotao.Size = UDim2.new(1, -20, 0, 30)
+staminaBotao.Position = UDim2.new(0, 10, 0, 200) -- abaixo do botão Anti Ban
+staminaBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+staminaBotao.TextColor3 = Color3.new(1, 1, 1)
+staminaBotao.Font = Enum.Font.Gotham
+staminaBotao.TextSize = 14
+staminaBotao.Text = "Stamina Infinita"
+staminaBotao.TextWrapped = true
+Instance.new("UICorner", staminaBotao).CornerRadius = UDim.new(0, 6)
+
+local staminaConexao = nil
+
+staminaBotao.MouseButton1Click:Connect(function()
+    staminaAtiva = not staminaAtiva
+    
+    if staminaAtiva then
+        staminaBotao.TextColor3 = Color3.fromRGB(0, 255, 0)
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            staminaConexao = game:GetService("RunService").Heartbeat:Connect(function()
+                -- Muitas vezes a stamina está ligada a Humanoid, mas depende do jogo
+                if humanoid:FindFirstChild("Stamina") then
+                    humanoid.Stamina.Value = humanoid.Stamina.MaxValue
+                end
+                -- Se for diferente, tens de me dizer o nome ou onde está a stamina no jogo
+            end)
+        end
+    else
+        staminaBotao.TextColor3 = Color3.new(1, 1, 1)
+        if staminaConexao then
+            staminaConexao:Disconnect()
+            staminaConexao = nil
+        end
+    end
+end)
+
+
+-- Botão Speed
+local speedAtivo = false
+local speedBotao = Instance.new("TextButton", secaoPrincipal)
+speedBotao.Size = UDim2.new(1, -20, 0, 30)
+speedBotao.Position = UDim2.new(0, 10, 0, 240) -- abaixo do botão Stamina
+speedBotao.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+speedBotao.TextColor3 = Color3.new(1, 1, 1)
+speedBotao.Font = Enum.Font.Gotham
+speedBotao.TextSize = 14
+speedBotao.Text = "Speed"
+speedBotao.TextWrapped = true
+Instance.new("UICorner", speedBotao).CornerRadius = UDim.new(0, 6)
+
+local velocidadePadrao = 16
+local velocidadeExtra = 50
+local humanoidSpeedConexao = nil
+
+speedBotao.MouseButton1Click:Connect(function()
+    speedAtivo = not speedAtivo
+    
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    
+    if speedAtivo then
+        speedBotao.TextColor3 = Color3.fromRGB(0, 255, 0)
+        if humanoid then
+            velocidadePadrao = humanoid.WalkSpeed
+            humanoid.WalkSpeed = velocidadeExtra
+        end
+    else
+        speedBotao.TextColor3 = Color3.new(1, 1, 1)
+        if humanoid then
+            humanoid.WalkSpeed = velocidadePadrao
+        end
+    end
+end)
+
+
+---categoria dinheiro---
